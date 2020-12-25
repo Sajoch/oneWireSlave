@@ -1,113 +1,104 @@
 #include "oneWireBehaviour.h"
 
-#include <cinttypes>
+#include <stm32f0xx.h>
 
-enum class OneWireCommandType : uint8_t {
-  NONE = 0,
-  SEARCH_ROM = 0xF0,
-  MATCH_ROM_OVERDRIVE = 0x69,
-  MATCH_ROM = 0x55,
-  SKIP_ROM = 0x3C,
-  SKIP_ROM_OVERDRIVE = 0xCC,
-  READ_ROM_OLD = 0x0F,
-  READ_ROM = 0x33,
-  ALARM_SEARCH = 0xEC,
-  RESUME_COMMAND = 0xA5
-};
+OneWireBehaviour::OneWireBehaviour(OneWireChannel* const channel,
+                                   OneWireLowLevel* const lowLevel)
+    : channel_(channel), lowLevel_(lowLevel) {}
 
-OneWireBehaviour::OneWireBehaviour(OneWireSlaveList* const slaveList,
-                                   OneWireChannel* const channel)
-    : slaveList_(slaveList), channel_(channel) {}
-
-bool OneWireBehaviour::processCommand() {
-  uint8_t cmd;
-  channel_->recv(&cmd, 1);
-
-  if (error_ == Error::RESET_IN_PROGRESS)
-    return false;  // stay in poll()-loop and trigger another
-                   // datastream-detection
-  if (error_ != Error::NO_ERROR) return true;
-
-  switch ((OneWireCommandType)cmd) {
-    case OneWireCommandType::SEARCH_ROM:
-      return searchRomCommand();
-    case OneWireCommandType::MATCH_ROM_OVERDRIVE:
-    case OneWireCommandType::MATCH_ROM:
-      matchRomCommand();
-      break;
-    case OneWireCommandType::SKIP_ROM_OVERDRIVE:
-    case OneWireCommandType::SKIP_ROM:
-      skipRomCommand();
-      break;
-    case OneWireCommandType::READ_ROM_OLD:
-    case OneWireCommandType::READ_ROM:
-      return readRomCommand();
-    case OneWireCommandType::ALARM_SEARCH:
-      alarmSearchCommand();
-      break;
-    case OneWireCommandType::RESUME_COMMAND:
-      if (!resumeCommand()) return false;
-      break;
-    default:
-      error_ = Error::INCORRECT_ONEWIRE_CMD;
-  }
-
-  if (error_ == Error::RESET_IN_PROGRESS) return false;
-
-  return (error_ != Error::NO_ERROR);
-}
-
-bool OneWireBehaviour::searchRomCommand() {
-  selectedSlave_ = nullptr;
-  // TODO searchIDTree();
-  return false;
-}
-bool OneWireBehaviour::matchRomCommand() {
-  uint8_t address[8];
-  selectedSlave_ = nullptr;
-
-  if (channel_->recv(address, 8)) {
+bool OneWireBehaviour::checkReset() {
+  isResetInProgress_ = false;
+  lowLevel_->setAsInput();
+  if (!lowLevel_->read()) return false;
+  if (readWhile(true, OneWireTime::RESET_TIMEOUT)) return false;
+  if (readWhile(false, OneWireTime::RESET_MIN - 1)) return false;
+  if (readWhile(false, OneWireTime::RESET_MAX - OneWireTime::RESET_MIN + 1))
     return true;
-  }
-
-  selectedSlave_ = slaveList_->find(address);
-
-  if (selectedSlave_) selectedSlave_->duty(channel_);
-  return true;
-}
-bool OneWireBehaviour::skipRomCommand() {
-  // NOTE: If more than one slave is present on the bus,
-  // and a read command is issued following the Skip ROM command,
-  // data collision will occur on the bus as multiple slaves transmit
-  // simultaneously
-  if (selectedSlave_ == nullptr && slaveList_->isSingle()) {
-    selectedSlave_ = slaveList_->getFirst();
-  }
-  if (selectedSlave_ != nullptr) {
-    selectedSlave_->duty(channel_);
-  }
-  return true;
-}
-bool OneWireBehaviour::readRomCommand() {
-  // only usable when there is ONE slave on the bus
-  if (selectedSlave_ == nullptr && slaveList_->isSingle()) {
-    selectedSlave_ = slaveList_->getFirst();
-  }
-  if (selectedSlave_ != nullptr) {
-    selectedSlave_->sendID(channel_);
-  }
   return false;
 }
-bool OneWireBehaviour::alarmSearchCommand() {
-  // TODO: Alarm searchIDTree command, respond if flag is set
-  // is like searchIDTree-rom, but only slaves with triggered alarm will
-  // appear
+
+bool OneWireBehaviour::showPresence() {
+  readWhile(true, OneWireTime::PRESENCE_TIMEOUT);
+  lowLevel_->writeLow();
+  lowLevel_->setAsOutput();
+  wait(OneWireTime::PRESENCE_MIN);
+  lowLevel_->setAsInput();
+  if (readWhile(false, OneWireTime::PRESENCE_MAX - OneWireTime::PRESENCE_MIN)) {
+    return false;
+  }
   return true;
 }
-bool OneWireBehaviour::resumeCommand() {
-  if (selectedSlave_ == nullptr) return false;
-  if (selectedSlave_->duty(channel_)) {
-    error_ = Error::INCORRECT_SLAVE_USAGE;
+
+bool OneWireBehaviour::sendAddress(const uint8_t address[8]) {
+  __disable_irq();
+  for (uint8_t byteId = 0; byteId < 8; byteId++) {
+    if (!sendAddressByte(address[byteId])) return false;
+  }
+  __enable_irq();
+  return true;
+}
+
+bool OneWireBehaviour::sendBit(bool bit) {
+  if (readWhile(false, OneWireTime::SLOT_MAX)) {
+    isResetInProgress_ = true;
+    return false;
+  }
+
+  if (readUntil(false, OneWireTime::MSG_HIGH_TIMEOUT)) return false;
+
+  if (bit) {
+    readWhile(false, OneWireTime::READ_MAX);
+  } else {
+    lowLevel_->setAsOutput();
+    readWhile(false, OneWireTime::WRITE_ZERO);
+  }
+
+  // TODO: we should check for (!retries) because there
+  // could be a reset in progress...
+  lowLevel_->setAsInput();
+  return true;
+}
+
+bool OneWireBehaviour::recvBit(bool& bit) {
+  if (readWhile(false, OneWireTime::SLOT_MAX)) {
+    isResetInProgress_ = true;
+    return false;
+  }
+
+  if (readUntil(false, OneWireTime::MSG_HIGH_TIMEOUT)) return false;
+  return !readWhile(false, OneWireTime::READ_MIN);
+}
+
+bool OneWireBehaviour::readWhile(bool value, OneWireTime::timeOW_t time) {
+  // TODO clear the us timer
+  // replace (--time != 0) and (time == 0) by (timer_value > time)
+  while (lowLevel_->read() == value && --time != 0)
+    ;
+  return time == 0;
+}
+bool OneWireBehaviour::readUntil(bool value, OneWireTime::timeOW_t time) {
+  // TODO clear the us timer
+  // replace (--time != 0) and (time == 0) by (timer_value > time)
+  while (lowLevel_->read() != value && --time != 0)
+    ;
+  return time == 0;
+}
+void OneWireBehaviour::wait(OneWireTime::timeOW_t time) {
+  // clear the us timer
+  // replace (--time != 0) and (time == 0) by (timer_value > time)
+  // TODO
+  while (--time != 0)
+    ;
+}
+
+bool OneWireBehaviour::sendAddressByte(uint8_t byte) {
+  bool checkBit;
+  for (uint8_t bitMask = 0x01; bitMask != 0; bitMask <<= 1) {
+    auto bit = static_cast<bool>(bitMask & byte);
+    if (!sendBit(bit)) return false;
+    if (!sendBit(!bit)) return false;
+    if (!recvBit(checkBit)) return false;
+    if (checkBit != bit) return false;
   }
   return true;
 }

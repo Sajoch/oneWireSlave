@@ -9,6 +9,7 @@ class OneWireSlave {
  public:
   OneWireSlave(uint8_t id, std::shared_ptr<SlaveBehaviour> behaviour);
   void sendID(OneWireChannel* const channel) const;
+  void replayForIDSearch(OneWireChannel* const channel) const;
   bool duty(OneWireChannel* const channel) const;
 
  private:

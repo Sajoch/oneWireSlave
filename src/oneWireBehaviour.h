@@ -1,26 +1,23 @@
 #pragma once
 
 #include "oneWireChannel.h"
-#include "oneWireError.h"
-#include "oneWireSlave.h"
-#include "oneWireSlaveList.h"
+#include "oneWireLowLevel.h"
 
 class OneWireBehaviour {
  public:
-  OneWireBehaviour(OneWireSlaveList* const slaveList,
-                   OneWireChannel* const channel);
-  bool processCommand();
-
+  OneWireBehaviour(OneWireLowLevel* const lowLevel);
+  bool checkReset();
+  bool showPresence();
+  bool sendAddress(const uint8_t address[8]);
+  bool sendBit(bool bit);
+  bool recvBit(bool& bit);
+  bool readWhile(bool value, OneWireTime::timeOW_t time);
+  bool readUntil(bool value, OneWireTime::timeOW_t time);
+  void wait(OneWireTime::timeOW_t time);
  private:
-  bool searchRomCommand();
-  bool matchRomCommand();
-  bool skipRomCommand();
-  bool readRomCommand();
-  bool alarmSearchCommand();
-  bool resumeCommand();
+  bool sendAddressByte(const uint8_t byte);
 
-  OneWireSlave* selectedSlave_;
-  OneWireSlaveList* slaveList_;
   OneWireChannel* channel_;
-  Error error_;
+  OneWireLowLevel* lowLevel_;
+  bool isResetInProgress_ = false;
 };

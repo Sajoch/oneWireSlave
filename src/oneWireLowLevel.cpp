@@ -1,69 +1,19 @@
 #include "oneWireLowLevel.h"
 
+#include <stm32f0xx.h>
+
 #include "oneWireTime.h"
 
-bool OneWireLowLevel::sendBit(bool bit) {
-  // Wait for bus to rise HIGH, signaling end of last timeslot
-
-  if (readWhile(false, OneWireTime::SLOT_MAX)) {
-    _error = Error::RESET_IN_PROGRESS;
-    return true;
-  }
-
-  // Wait for bus to fall LOW, start of new timeslot
-  if (readUntil(false, OneWireTime::MSG_HIGH_TIMEOUT)) {
-    _error = Error::AWAIT_TIMESLOT_TIMEOUT_HIGH;
-    return true;
-  }
-
-  // first difference to inner-loop of read()
-  if (bit) {
-    readWhile(0, OneWireTime::READ_MAX);
-  } else {
-    setAsOutput();
-    readWhile(0, OneWireTime::WRITE_ZERO);
-  }
-
-  // TODO: we should check for (!retries) because there
-  // could be a reset in progress...
-  setAsInput();
-  return false;
+OneWireLowLevel::OneWireLowLevel(uint32_t pin)
+    : pin_(1 << pin),
+      pinModeMaskOutput_(1 << (2 * pin)),
+      pinModeMaskInput_(~pinModeMaskOutput_) {
+  RCC->AHBENR |= (1 << 17);
 }
 
-bool OneWireLowLevel::recvBit(bool& bit) {
-  if (readWhile(false, OneWireTime::SLOT_MAX)) {
-    _error = Error::RESET_IN_PROGRESS;
-    return false;
-  }
+bool OneWireLowLevel::read() { return GPIOA->IDR & pin_; }
+void OneWireLowLevel::writeHigh() { GPIOA->BSRR = pin_; }
+void OneWireLowLevel::writeLow() { GPIOA->BRR = pin_; }
 
-  // Wait for bus to fall LOW, start of new timeslot
-  if (readUntil(false, OneWireTime::MSG_HIGH_TIMEOUT)) {
-    _error = Error::AWAIT_TIMESLOT_TIMEOUT_HIGH;
-    return false;
-  }
-
-  // wait a specific time to do a read (data is valid by then), // first
-  // difference to inner-loop of write()
-  return !readWhile(false, OneWireTime::READ_MIN);
-}
-
-bool OneWireLowLevel::readWhile(bool value, OneWireTime::timeOW_t time) {
-  while (read() == value && --time != 0)
-    ;
-  return time == 0;
-}
-bool OneWireLowLevel::readUntil(bool value, OneWireTime::timeOW_t time) {
-  while (read() != value && --time != 0)
-    ;
-  return time == 0;
-}
-
-bool OneWireLowLevel::read() {
-  return false;  // TODO
-}
-void OneWireLowLevel::write(bool value) {
-  // TODO
-}
-
-void OneWireLowLevel::setAsOutput() {}
-void OneWireLowLevel::setAsInput() {}
+void OneWireLowLevel::setAsOutput() { GPIOA->MODER |= pinModeMaskOutput_; }
+void OneWireLowLevel::setAsInput() { GPIOA->MODER &= pinModeMaskInput_; }

@@ -3,15 +3,14 @@
 
 class OneWireLowLevel {
  public:
-  bool checkReset();
-  bool showPresence();
-  bool sendBit(bool bit);
-  bool recvBit(bool& bit);
-
-  bool readWhile(bool value, OneWireTime::timeOW_t time);
-  bool readUntil(bool value, OneWireTime::timeOW_t time);
+ OneWireLowLevel(uint32_t pin);
   bool read();
-  void write(bool value);
+  void writeHigh();
+  void writeLow();
   void setAsOutput();
   void setAsInput();
+  private:
+  const uint32_t pin_;
+  const uint32_t pinModeMaskInput_;
+  const uint32_t pinModeMaskOutput_;
 };

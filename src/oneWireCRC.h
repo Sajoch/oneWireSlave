@@ -3,7 +3,7 @@
 
 class OneWireCRC {
  public:
-  static uint8_t crc8(const uint8_t data[], uint8_t data_size,
+  static uint8_t crc8(const uint8_t* data, uint8_t data_size,
                       uint8_t crc_init = 0);
   static uint16_t crc16(const uint8_t address[], uint8_t len,
                         uint16_t init = 0);

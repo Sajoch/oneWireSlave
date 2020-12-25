@@ -4,9 +4,10 @@
 class OneWireSlaveList {
  public:
   OneWireSlave* create(uint8_t address[8]);
-  OneWireSlave* getFirst();
-  bool isSingle();
-  OneWireSlave* find(uint8_t address[8]);
+  OneWireSlave* getFirst() const;
+  bool isSingle() const;
+  bool isAny() const;
+  OneWireSlave* find(uint8_t address[8]) const;
 
  private:
   OneWireSlave* slave_ = nullptr;
