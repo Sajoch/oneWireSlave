@@ -4,7 +4,6 @@
 
 OneWireLowLevel::OneWireLowLevel(GPIO_TypeDef *port, uint32_t pin) :
 		port_(port), pin_(pin), pinModeMaskInput_(~pin_) {
-	RCC->AHBENR |= (1 << 17);
 }
 
 bool OneWireLowLevel::read() {
