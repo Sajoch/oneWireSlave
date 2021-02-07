@@ -3,7 +3,7 @@
 
 class OneWireSlaveList {
  public:
-  OneWireSlave* create(uint8_t address[8]);
+  OneWireSlave* create(uint8_t address[8], std::shared_ptr<SlaveBehaviour> behaviour);
   OneWireSlave* getFirst() const;
   bool isSingle() const;
   bool isAny() const;

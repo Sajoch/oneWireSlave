@@ -25,7 +25,7 @@ bool OneWireController::processCommand() {
   if (error_ == Error::RESET_IN_PROGRESS)
     return false;  // stay in poll()-loop and trigger another
                    // datastream-detection
-  if (error_ != Error::NO_ERROR) return true;
+  //if (error_ != Error::NO_ERROR) return true;
 
   switch ((OneWireCommandType)cmd) {
     case OneWireCommandType::SEARCH_ROM:

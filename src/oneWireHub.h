@@ -5,17 +5,18 @@
 #include "oneWireController.h"
 #include "oneWireLowLevel.h"
 #include "oneWireSlaveList.h"
+#include "stm32f0xx_hal.h"
 
 class OneWireHub {
  public:
-  OneWireHub(OneWireLowLevel& lowLevel);
+  OneWireHub(OneWireLowLevel& lowLevel, TIM_HandleTypeDef* timer);
   void poll();
-  OneWireSlave* create(uint8_t address[8]);
+  OneWireSlave* create(uint8_t address[8], std::shared_ptr<SlaveBehaviour> behaviour);
 
  private:
   OneWireLowLevel& lowLevel_;
-  OneWireChannel channel_;
   OneWireBehaviour behaviour_;
+  OneWireChannel channel_;
   OneWireController controller_;
   OneWireSlaveList list_;
 };

@@ -17,7 +17,7 @@ DS18B20::DS18B20() {
 
 bool DS18B20::duty(OneWireChannel* const channel) {
   uint8_t cmd;
-  if (channel->recv(&cmd, 1)) return;
+  if (channel->recv(&cmd, 1)) return false;
 
   switch (cmd) {
     case 0x4E:  // WRITE SCRATCHPAD
@@ -35,9 +35,6 @@ bool DS18B20::duty(OneWireChannel* const channel) {
       break;    // signal that OP is done, 1s is passive ...
 
     case 0xB4:  // READ POWER SUPPLY
-      channel->sendBit(true);
-      // hub->sendBit(0); // 1: say i am external powered, 0: uses parasite
-      // power, 1 is passive, so omit it ...
       break;
     case 0x44:  // CONVERT T --> start a new measurement conversion
       // we have 94 ... 750ms time here (9-12bit conversion)
