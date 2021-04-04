@@ -3,15 +3,15 @@
 #include <stm32f0xx.h>
 
 OneWireChannel::OneWireChannel(OneWireBehaviour *behaviour,
-		OneWireLowLevel *lowLevel) :
+		IOneWireLowLevel *lowLevel) :
 		behaviour_(behaviour), lowLevel_(lowLevel) {
 }
 
-bool OneWireChannel::send(const uint8_t *data, uint8_t length) {
+bool OneWireChannel::send(const uint8_t *data, int length) {
 	__disable_irq();
 	lowLevel_->setAsInput();
 	lowLevel_->writeLow();
-	uint8_t sent = 0;
+	int sent = 0;
 
 	for (; sent < length; ++sent) {
 		const uint8_t dataByte = data[sent];
@@ -22,11 +22,11 @@ bool OneWireChannel::send(const uint8_t *data, uint8_t length) {
 	return (sent != length);
 }
 
-bool OneWireChannel::recv(uint8_t *data, uint8_t length) {
+bool OneWireChannel::recv(uint8_t *data, int length) {
 	__disable_irq();
 	lowLevel_->setAsInput();
 
-	uint8_t received = 0;
+	int received = 0;
 	for (; received < length; ++received) {
 		if (!recvByte(data[received]))
 			break;

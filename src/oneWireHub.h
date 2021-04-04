@@ -9,12 +9,12 @@
 
 class OneWireHub {
  public:
-  OneWireHub(OneWireLowLevel& lowLevel, TIM_HandleTypeDef* timer);
+  OneWireHub(IOneWireLowLevel& lowLevel, TIM_HandleTypeDef* timer);
   void poll();
   OneWireSlave* create(uint8_t address[8], std::shared_ptr<SlaveBehaviour> behaviour);
 
  private:
-  OneWireLowLevel& lowLevel_;
+  IOneWireLowLevel& lowLevel_;
   OneWireBehaviour behaviour_;
   OneWireChannel channel_;
   OneWireController controller_;

@@ -2,7 +2,7 @@
 
 #include <stm32f0xx.h>
 
-OneWireBehaviour::OneWireBehaviour(OneWireLowLevel *const lowLevel,
+OneWireBehaviour::OneWireBehaviour(IOneWireLowLevel *const lowLevel,
 		TIM_HandleTypeDef *timer) :
 		timer_(timer), lowLevel_(lowLevel) {
 }
