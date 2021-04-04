@@ -1,6 +1,7 @@
 #pragma once
 
-#include "oneWireLowLevel.h"
+#include "iOneWireLowLevel.h"
+#include "oneWireTime.h"
 #include "stm32f0xx_hal.h"
 
 class OneWireBehaviour {
