@@ -1,5 +1,5 @@
 #pragma once
-#include "slaveBehaviour.h"
+#include "../slaveBehaviour.h"
 
 class DS18B20 : public SlaveBehaviour {
  public:

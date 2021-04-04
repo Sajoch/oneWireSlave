@@ -2,7 +2,7 @@
 #include <cinttypes>
 
 #include "oneWireBehaviour.h"
-#include "oneWireLowLevel.h"
+#include "iOneWireLowLevel.h"
 
 class OneWireChannel {
  public:

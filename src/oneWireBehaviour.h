@@ -6,7 +6,7 @@
 
 class OneWireBehaviour {
  public:
-  OneWireBehaviour(IOneWireLowLevel* const lowLevel, TIM_HandleTypeDef* timer);
+  OneWireBehaviour(IOneWireLowLevel* const lowLevel);
   bool checkReset();
   bool showPresence();
   bool sendAddress(const uint8_t address[8]);
@@ -18,7 +18,6 @@ class OneWireBehaviour {
  private:
   bool sendAddressByte(const uint8_t byte);
 
-  TIM_HandleTypeDef* timer_;
   IOneWireLowLevel* lowLevel_;
   bool isResetInProgress_ = false;
 };

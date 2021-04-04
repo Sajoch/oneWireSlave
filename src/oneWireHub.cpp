@@ -1,7 +1,7 @@
 #include "oneWireHub.h"
 
-OneWireHub::OneWireHub(IOneWireLowLevel &lowLevel, TIM_HandleTypeDef *timer) :
-		lowLevel_(lowLevel), behaviour_(&lowLevel_, timer), channel_(
+OneWireHub::OneWireHub(IOneWireLowLevel &lowLevel) :
+		lowLevel_(lowLevel), behaviour_(&lowLevel_), channel_(
 				&behaviour_, &lowLevel_), controller_(&list_, &channel_) {
 }
 

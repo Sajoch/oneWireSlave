@@ -2,9 +2,8 @@
 
 #include <stm32f0xx.h>
 
-OneWireBehaviour::OneWireBehaviour(IOneWireLowLevel *const lowLevel,
-		TIM_HandleTypeDef *timer) :
-		timer_(timer), lowLevel_(lowLevel) {
+OneWireBehaviour::OneWireBehaviour(IOneWireLowLevel *const lowLevel) :
+		lowLevel_(lowLevel) {
 }
 
 bool OneWireBehaviour::checkReset() {
@@ -100,19 +99,11 @@ bool OneWireBehaviour::readWhile(bool value, OneWireTime::timeOW_t time) {
 }
 
 uint32_t OneWireBehaviour::waitWhile(bool value, OneWireTime::timeOW_t time) {
-	__HAL_TIM_SET_COUNTER(timer_, 0);
-	while (lowLevel_->read() == value && __HAL_TIM_GET_COUNTER(timer_) < time)
-		;
-	return __HAL_TIM_GET_COUNTER(timer_);
+	return lowLevel_->waitWhileMS(value, time);
 }
 
 void OneWireBehaviour::wait(OneWireTime::timeOW_t time) {
-	// clear the us timer
-	// replace (--time != 0) and (time == 0) by (timer_value > time)
-	// TODO
-	__HAL_TIM_SET_COUNTER(timer_, 0);
-	while (__HAL_TIM_GET_COUNTER(timer_) < time)
-		;
+	return lowLevel_->waitMS(time);
 }
 
 bool OneWireBehaviour::sendAddressByte(uint8_t byte) {

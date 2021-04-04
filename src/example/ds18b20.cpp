@@ -1,6 +1,6 @@
 #include "ds18b20.h"
 
-#include "oneWireCRC.h"
+#include "../oneWireCRC.h"
 
 DS18B20::DS18B20() {
   scratchpad_[0] = 0xA0;  // TLSB --> 10 degC as std
