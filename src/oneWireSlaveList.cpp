@@ -19,5 +19,7 @@ bool OneWireSlaveList::isAny() const {
 }
 
 OneWireSlave* OneWireSlaveList::find(uint8_t address[8]) const {
-
+	if (slave_->isMatchingId(address))
+		return slave_;
+	return nullptr;
 }
