@@ -22,6 +22,18 @@ bool OneWireChannel::send(const uint8_t *data, int length) {
 	return (sent != length);
 }
 
+bool OneWireChannel::send(const uint8_t data) {
+	__disable_irq();
+	lowLevel_->setAsInput();
+	lowLevel_->writeLow();
+
+	if (!sendByte(data))
+		return false;
+
+	__enable_irq();
+	return true;
+}
+
 bool OneWireChannel::recv(uint8_t *data, int length) {
 	__disable_irq();
 	lowLevel_->setAsInput();
