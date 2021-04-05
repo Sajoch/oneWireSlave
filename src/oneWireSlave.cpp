@@ -1,4 +1,5 @@
 #include "oneWireSlave.h"
+#include "oneWireCRC.h"
 #include <string.h>
 
 OneWireSlave::OneWireSlave(uint8_t id[8],
