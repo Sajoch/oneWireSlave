@@ -4,7 +4,8 @@
 OneWireSlave::OneWireSlave(uint8_t id[8],
 		std::shared_ptr<SlaveBehaviour> behaviour) :
 		behaviour_(behaviour) {
-	memcpy(ID, id, 8);
+	memcpy(ID, id, 7);
+	ID[7] = OneWireCRC::crc8(id, 7);
 }
 
 void OneWireSlave::sendID(OneWireChannel *const channel) const {
